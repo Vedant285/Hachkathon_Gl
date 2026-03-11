@@ -21,10 +21,10 @@ st.markdown("""
 # --- LOAD ASSETS ---
 @st.cache_resource
 def load_models():
-    reg_model = joblib.load('models/regression_pipeline.pkl')
-    cls_model = joblib.load('models/classification_model.pkl')
-    vectorizer = joblib.load('models/tfidf_vectorizer.pkl')
-    stats = joblib.load('models/summary_stats.pkl')
+    reg_model = joblib.load('regression_pipeline.pkl')
+    cls_model = joblib.load('classification_model.pkl')
+    vectorizer = joblib.load('tfidf_vectorizer.pkl')
+    stats = joblib.load('summary_stats.pkl')
     return reg_model, cls_model, vectorizer, stats
 
 try:
@@ -53,7 +53,7 @@ if page == "Executive Summary":
     
     # Showcase WordCloud
     st.subheader("Frequent Customer Themes")
-    st.image('plots/wordcloud.png', use_container_width=True, caption="Top Keywords in Fine Food Reviews")
+    st.image('wordcloud.png', use_container_width=True, caption="Top Keywords in Fine Food Reviews")
 
 # --- PAGE 2: DEEP EDA ---
 elif page == "Deep EDA":
@@ -62,7 +62,7 @@ elif page == "Deep EDA":
     col_a, col_b = st.columns(2)
     with col_a:
         st.subheader("Rating Distribution")
-        st.image('plots/score_distribution.png')
+        st.image('score_distribution.png')
         st.write("Insight: A high density of 5-star reviews suggests a 'positivity bias' in organic food consumers.")
     
     with col_b:
@@ -113,3 +113,4 @@ elif page == "Business Impact":
     st.write("We propose a new 'Trust Metric' based on the ratio of Helpfulness to Predicted Sentiment to identify authentic reviews vs. bots.")
     
     st.success("Our solution provides a scalable way to maintain the 'Gold Standard' of Amazon product quality.")
+
