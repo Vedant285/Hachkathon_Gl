@@ -40,7 +40,7 @@ option = st.sidebar.selectbox(
 @st.cache_resource
 def load_models():
     try:
-        with open('models.pkl', 'rb') as f:
+        with open('https://drive.google.com/file/d/1suFu-xDXjbfcHdVA3O4rCFdftWsgG6qx/view?usp=drive_link', 'rb') as f:
             return pickle.load(f)
     except:
         return None
@@ -147,4 +147,5 @@ elif option == "NLP Insights":
 
 # Footer
 st.markdown("---")
+
 st.caption("Built for the Amazon Insights Pitch Battle | Data Science Consultancy Team")
