@@ -5,7 +5,6 @@ import joblib
 import re
 import plotly.express as px
 import plotly.graph_objects as go
-from PIL import Image
 
 # ==========================================
 # PAGE CONFIGURATION
@@ -18,7 +17,7 @@ st.set_page_config(
 )
 
 # ==========================================
-# CUSTOM CSS STYLING (Amazon Brand Colors)
+# CUSTOM CSS STYLING (Fixed Contrast)
 # ==========================================
 st.markdown("""
 <style>
@@ -26,8 +25,11 @@ st.markdown("""
     :root {
         --amazon-orange: #FF9900;
         --amazon-dark: #232F3E;
-        --amazon-light: #37475A;
+        --amazon-blue: #37475A;
         --amazon-white: #FFFFFF;
+        --text-dark: #111111;
+        --text-light: #FFFFFF;
+        --bg-light: #F3F3F3;
     }
     
     /* Main Container */
@@ -37,29 +39,30 @@ st.markdown("""
         padding: 20px;
     }
     
-    /* Header Styling */
+    /* Header Box - FIXED: Light text on dark background */
     .header-box {
         background: linear-gradient(135deg, #232F3E 0%, #37475A 100%);
         padding: 30px;
         border-radius: 15px;
         margin-bottom: 30px;
         border-left: 5px solid #FF9900;
+        color: white !important;
     }
     
     .header-title {
-        color: white;
+        color: white !important;
         font-size: 2.5em;
         font-weight: bold;
         margin: 0;
     }
     
     .header-subtitle {
-        color: #FF9900;
+        color: #FF9900 !important;
         font-size: 1.2em;
         margin-top: 10px;
     }
     
-    /* Metric Cards */
+    /* Metric Cards - FIXED: Dark text on white background */
     .metric-card {
         background: white;
         padding: 25px;
@@ -68,6 +71,7 @@ st.markdown("""
         border-top: 4px solid #FF9900;
         text-align: center;
         transition: transform 0.3s;
+        color: #232F3E;
     }
     
     .metric-card:hover {
@@ -77,46 +81,47 @@ st.markdown("""
     .metric-value {
         font-size: 2.5em;
         font-weight: bold;
-        color: #232F3E;
+        color: #232F3E !important;
     }
     
     .metric-label {
-        color: #666;
+        color: #555555 !important;
         font-size: 1em;
         margin-top: 10px;
     }
     
-    /* Section Headers */
+    /* Section Headers - FIXED: Dark text on orange background */
     .section-header {
         background: linear-gradient(90deg, #FF9900 0%, #FFB84D 100%);
         padding: 15px 25px;
         border-radius: 10px;
-        color: #232F3E;
+        color: #232F3E !important;
         font-size: 1.5em;
         font-weight: bold;
         margin: 30px 0 20px 0;
     }
     
-    /* Prediction Box */
+    /* Prediction Box - FIXED: Dark text on light background */
     .prediction-box {
-        background: #f0f8ff;
+        background: #FFFFFF;
         padding: 25px;
         border-radius: 12px;
         border: 2px solid #FF9900;
         margin: 20px 0;
+        color: #232F3E;
     }
     
     .prediction-value {
         font-size: 3em;
         font-weight: bold;
-        color: #232F3E;
+        color: #232F3E !important;
         text-align: center;
     }
     
-    /* Sentiment Badges */
+    /* Sentiment Badges - FIXED: High contrast colors */
     .sentiment-positive {
-        background: #d4edda;
-        color: #155724;
+        background: #155724;
+        color: white !important;
         padding: 10px 20px;
         border-radius: 20px;
         font-weight: bold;
@@ -124,8 +129,8 @@ st.markdown("""
     }
     
     .sentiment-neutral {
-        background: #fff3cd;
-        color: #856404;
+        background: #856404;
+        color: white !important;
         padding: 10px 20px;
         border-radius: 20px;
         font-weight: bold;
@@ -133,28 +138,36 @@ st.markdown("""
     }
     
     .sentiment-negative {
-        background: #f8d7da;
-        color: #721c24;
+        background: #721c24;
+        color: white !important;
         padding: 10px 20px;
         border-radius: 20px;
         font-weight: bold;
         display: inline-block;
     }
     
-    /* Sidebar Styling */
+    /* Sidebar Styling - FIXED: Better contrast */
     .sidebar-header {
         background: #232F3E;
-        color: #FF9900;
+        color: #FF9900 !important;
         padding: 15px;
         border-radius: 10px;
         text-align: center;
         margin-bottom: 20px;
     }
     
+    .sidebar-header h2 {
+        color: #FF9900 !important;
+    }
+    
+    .sidebar-header p {
+        color: white !important;
+    }
+    
     /* Button Styling */
     .stButton>button {
         background: linear-gradient(90deg, #FF9900 0%, #FFB84D 100%);
-        color: #232F3E;
+        color: #232F3E !important;
         font-weight: bold;
         border: none;
         padding: 12px 30px;
@@ -167,13 +180,18 @@ st.markdown("""
         box-shadow: 0 4px 15px rgba(255, 153, 0, 0.4);
     }
     
-    /* Info Boxes */
+    /* Info Boxes - FIXED: Dark text on light background */
     .info-box {
-        background: #e7f3ff;
+        background: #FFFFFF;
         border-left: 4px solid #232F3E;
         padding: 15px 20px;
         border-radius: 8px;
         margin: 15px 0;
+        color: #232F3E !important;
+    }
+    
+    .info-box strong {
+        color: #FF9900 !important;
     }
     
     /* Footer */
@@ -182,7 +200,16 @@ st.markdown("""
         padding: 30px;
         margin-top: 50px;
         border-top: 2px solid #FF9900;
-        color: #666;
+        color: #555555 !important;
+    }
+    
+    /* Streamlit Default Overrides */
+    .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {
+        color: #232F3E !important;
+    }
+    
+    .stExpander {
+        border: 1px solid #FF9900;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -200,8 +227,8 @@ def load_assets():
 
 try:
     reg_pipeline, cls_model, tfidf_cls, stats = load_assets()
-except:
-    st.error("⚠️ Models not found. Please run main_analysis.py first!")
+except Exception as e:
+    st.error(f"⚠️ Models not found. Please run main.py first! Error: {str(e)}")
     st.stop()
 
 # ==========================================
@@ -230,7 +257,7 @@ with st.sidebar:
     st.markdown("""
     <div class="sidebar-header">
         <h2>🛒 Amazon Insights</h2>
-        <p style="color: white; font-size: 0.9em;">Review Intelligence Dashboard</p>
+        <p>Review Intelligence Dashboard</p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -326,9 +353,9 @@ if option == "🏠 Home":
     # Call to Action
     st.markdown("---")
     st.markdown("""
-    <div style="text-align: center; padding: 40px; background: linear-gradient(135deg, #f0f8ff 0%, #e6f3ff 100%); border-radius: 15px; margin: 30px 0;">
+    <div style="text-align: center; padding: 40px; background: #F3F3F3; border-radius: 15px; margin: 30px 0; border: 2px solid #FF9900;">
         <h2 style="color: #232F3E;">🚀 Ready to Transform Amazon's Review Analytics?</h2>
-        <p style="color: #666; font-size: 1.1em;">Navigate through the dashboard to explore our predictive capabilities</p>
+        <p style="color: #555555; font-size: 1.1em;">Navigate through the dashboard to explore our predictive capabilities</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -371,7 +398,6 @@ elif option == "🔮 Predict Rating":
             prediction = reg_pipeline.predict(input_data)[0]
             prediction = np.clip(prediction, 1, 5)
             
-            # Store prediction for display
             st.session_state['prediction'] = prediction
     
     with col2:
@@ -405,7 +431,7 @@ elif option == "🔮 Predict Rating":
             st.markdown(f"""
             <div class="prediction-box">
                 <div class="prediction-value">⭐ {pred:.2f} / 5.0</div>
-                <p style="text-align: center; color: #666;">Based on text sentiment & helpfulness metadata</p>
+                <p style="text-align: center; color: #555555;">Based on text sentiment & helpfulness metadata</p>
             </div>
             """, unsafe_allow_html=True)
         else:
@@ -472,7 +498,7 @@ elif option == "💬 Sentiment Analysis":
             fig.add_trace(go.Bar(
                 x=classes,
                 y=proba,
-                marker_color=['#d4edda', '#fff3cd', '#f8d7da'],
+                marker_color=['#155724', '#856404', '#721c24'],
                 text=[f'{p:.2%}' for p in proba],
                 textposition='outside'
             ))
@@ -482,7 +508,9 @@ elif option == "💬 Sentiment Analysis":
                 xaxis_title="Sentiment Class",
                 yaxis_title="Probability",
                 height=300,
-                showlegend=False
+                showlegend=False,
+                plot_bgcolor='white',
+                paper_bgcolor='white'
             )
             
             st.plotly_chart(fig, use_container_width=True)
@@ -519,7 +547,6 @@ elif option == "📈 EDA Insights":
     </div>
     """, unsafe_allow_html=True)
     
-    # Load and display plots
     st.markdown('<div class="section-header">📊 Visual Insights</div>', unsafe_allow_html=True)
     
     col1, col2 = st.columns(2)
@@ -528,13 +555,19 @@ elif option == "📈 EDA Insights":
         try:
             st.image("plots/score_distribution.png", caption="Distribution of Product Ratings", use_container_width=True)
         except:
-            st.warning("Score distribution plot not found. Run main_analysis.py first.")
+            st.warning("Score distribution plot not found. Run main.py first.")
     
     with col2:
         try:
-            st.image("plots/wordcloud.png", caption="Most Common Keywords in Reviews", use_container_width=True)
+            st.image("plots/usefulness_distribution.png", caption="Scores by Usefulness Category", use_container_width=True)
         except:
-            st.warning("Word cloud not found. Run main_analysis.py first.")
+            st.warning("Usefulness plot not found. Run main.py first.")
+    
+    st.markdown('<div class="section-header">🔍 Word Cloud Analysis</div>', unsafe_allow_html=True)
+    try:
+        st.image("plots/wordcloud.png", caption="Most Common Keywords in Reviews", use_container_width=True)
+    except:
+        st.warning("Word cloud not found. Run main.py first.")
     
     # Additional Insights
     st.markdown('<div class="section-header">🔍 Key Findings</div>', unsafe_allow_html=True)
@@ -570,7 +603,6 @@ elif option == "💡 Business Impact":
     </div>
     """, unsafe_allow_html=True)
     
-    # Three Pillars
     st.markdown('<div class="section-header">🎯 Three Key Decision Areas</div>', unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns(3)
@@ -632,7 +664,7 @@ elif option == "💡 Business Impact":
     
     # Final Recommendation
     st.markdown("""
-    <div style="background: linear-gradient(135deg, #FF9900 0%, #FFB84D 100%); padding: 30px; border-radius: 15px; margin: 30px 0; text-align: center;">
+    <div style="background: linear-gradient(135deg, #FF9900 0%, #FFB84D 100%); padding: 30px; border-radius: 15px; margin: 30px 0; text-align: center; border: 2px solid #232F3E;">
         <h2 style="color: #232F3E; margin: 0;">🚀 Recommendation: Proceed with Implementation</h2>
         <p style="color: #232F3E; font-size: 1.1em; margin: 15px 0 0 0;">
             Our predictive analytics solution delivers immediate value with minimal integration effort
