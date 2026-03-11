@@ -1,111 +1,113 @@
+"""
+================================================================================
+PROJECT: Amazon Insights Dashboard (Streamlit Prototype)
+TEAM: [Insert Team Name]
+================================================================================
+DESCRIPTION:
+This app allows Amazon stakeholders to interact with the models.
+Features:
+1. Overview of Sentiment Distribution.
+2. Predict Review Rating (Regression) based on metadata.
+3. Classify Review Sentiment (Classification) based on review text.
+4. View Key Insights (Keywords/Themes).
+================================================================================
+"""
+
 import streamlit as st
 import pandas as pd
 import pickle
 import numpy as np
 import matplotlib.pyplot as plt
-import os
-import gdown 
+import re
+from PIL import Image
 
-# ==========================================
-# PAGE CONFIGURATION
-# ==========================================
+# Page Config
 st.set_page_config(page_title="Amazon Quality Insights", layout="wide")
 
+# Title & Header
 st.title("📦 Amazon Fine Food Reviews - Quality Insights Dashboard")
 st.markdown("""
-**Consultant Pitch:** This dashboard helps Amazon optimize product retention 
-and detect seller quality issues early using predictive analytics.
+**Consultant Pitch:** This dashboard helps Amazon optimize product retention, 
+detect seller quality issues early, and automate sentiment monitoring using predictive analytics.
 """)
 
-# ==========================================
-# SIDEBAR NAVIGATION
-# ==========================================
+# Sidebar for Navigation
 st.sidebar.header("Navigation")
 option = st.sidebar.selectbox(
     "Select View",
-    ["Overview & EDA", "Predict Review Success", "NLP Insights"]
+    ["Overview & EDA", "Predict Rating (Regression)", "Classify Sentiment (NLP)", "NLP Insights"]
 )
 
-# ==========================================
-# CLOUD DATA LOADING (Google Drive)
-# ==========================================
+# Load Models and Data (Cached for performance)
 @st.cache_resource
 def load_models():
-    file_name = 'models.pkl'
-    if not os.path.exists(file_name):
-        with st.spinner("Downloading AI Models from Google Drive..."):
-            try:
-                file_id = '1suFu-xDXjbfcHdVA3O4rCFdftWsgG6qx'
-                url = f'https://drive.google.com/uc?id={file_id}'
-                gdown.download(url, file_name, quiet=False)
-            except Exception as e:
-                st.error(f"Error downloading model: {e}")
-                return None
     try:
-        with open(file_name, 'rb') as f:
+        with open('models.pkl', 'rb') as f:
             return pickle.load(f)
     except Exception as e:
-        st.error(f"Error loading model: {e}")
+        st.error(f"Error loading models: {e}")
         return None
 
 @st.cache_data
 def load_data():
-    file_name = 'cleaned_reviews.csv'
-    if not os.path.exists(file_name):
-        with st.spinner("Downloading Dataset from Google Drive..."):
-            try:
-                file_id = '1XaQgTM_giihM5TVXW7cQ9Qa71gFxEcRT'
-                url = f'https://drive.google.com/uc?id={file_id}'
-                gdown.download(url, file_name, quiet=False)
-            except Exception as e:
-                st.error(f"Error downloading data: {e}")
-                return pd.DataFrame(columns=['Score', 'Polarity', 'Summary', 'Text']) 
     try:
-        return pd.read_csv(file_name)
-    except Exception as e:
-        st.warning(f"Data loading failed: {e}. Using fallback.")
-        return pd.DataFrame(columns=['Score', 'Polarity', 'Summary', 'Text'])
+        return pd.read_csv('cleaned_reviews.csv')
+    except:
+        return pd.read_csv('Reviews.csv')  # Fallback
 
 models = load_models()
 df = load_data()
 
-# ==========================================
+# ==============================================================================
+# HELPER: Preprocess text for classification (matches training pipeline)
+# ==============================================================================
+def preprocess_text_for_prediction(text):
+    """Cleans input text to match training preprocessing."""
+    if isinstance(text, str):
+        text = text.lower()
+        text = re.sub(r'[^a-zA-Z\s]', '', text)
+        # Simple tokenization (no NLTK dependency for app speed)
+        tokens = text.split()
+        # Remove common stopwords (small set for speed)
+        stop_words = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for'}
+        tokens = [w for w in tokens if w not in stop_words and len(w) > 2]
+        return " ".join(tokens)
+    return ""
+
+# ==============================================================================
 # VIEW 1: OVERVIEW & EDA
-# ==========================================
+# ==============================================================================
 if option == "Overview & EDA":
     st.header("1. Consumer Sentiment Overview")
     
-    # Check if data loaded properly to avoid crashing
-    if not df.empty and 'Score' in df.columns:
-        col1, col2 = st.columns(2)
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.subheader("Rating Distribution")
+        fig1, ax1 = plt.subplots()
+        df['Score'].value_counts().sort_index().plot(kind='bar', ax=ax1, color='skyblue')
+        ax1.set_title("Product Ratings (1-5)")
+        st.pyplot(fig1)
         
-        with col1:
-            st.subheader("Rating Distribution")
-            fig1, ax1 = plt.subplots()
-            df['Score'].value_counts().sort_index().plot(kind='bar', ax=ax1, color='skyblue')
-            ax1.set_title("Product Ratings (1-5)")
-            st.pyplot(fig1)
-            
-        with col2:
-            st.subheader("Sentiment Polarity")
-            if 'Polarity' not in df.columns:
-                df['Polarity'] = df['Score'].apply(lambda x: 'Negative' if x<=2 else ('Neutral' if x==3 else 'Positive'))
-                
-            fig2, ax2 = plt.subplots()
-            df['Polarity'].value_counts().plot(kind='pie', ax=ax2, autopct='%1.1f%%')
-            ax2.set_title("Positive vs Negative Reviews")
-            st.pyplot(fig2)
+    with col2:
+        st.subheader("Sentiment Polarity")
+        if 'Polarity' not in df.columns:
+            df['Polarity'] = df['Score'].apply(
+                lambda x: 'Negative' if x<=2 else ('Neutral' if x==3 else 'Positive')
+            )
+        fig2, ax2 = plt.subplots()
+        df['Polarity'].value_counts().plot(kind='pie', ax=ax2, autopct='%1.1f%%')
+        ax2.set_title("Positive vs Negative Reviews")
+        st.pyplot(fig2)
 
-        st.info("**Business Insight:** Majority of reviews are positive. Focus on the 'Negative' segment for quality improvement.")
-    else:
-        st.warning("Data is currently empty or still loading.")
+    st.info("**Business Insight:** Majority of reviews are positive. Focus on the 'Negative' segment for quality improvement.")
 
-# ==========================================
-# VIEW 2: PREDICT REVIEW SUCCESS
-# ==========================================
-elif option == "Predict Review Success":
+# ==============================================================================
+# VIEW 2: PREDICT RATING (REGRESSION)
+# ==============================================================================
+elif option == "Predict Rating (Regression)":
     st.header("2. Predict Product Rating")
-    st.markdown("Enter review metadata to predict the likely star rating.")
+    st.markdown("Enter review metadata to predict the likely star rating (1-5).")
     
     if models and 'regression' in models:
         col1, col2 = st.columns(2)
@@ -130,36 +132,96 @@ elif option == "Predict Review Success":
                 else:
                     st.success("✅ Opportunity: High rating predicted. Good product fit.")
     else:
-        st.warning("Models not found. Please ensure the Google Drive download completed.")
+        st.warning("Models not found. Please run solution.py first.")
 
-# ==========================================
-# VIEW 3: NLP INSIGHTS
-# ==========================================
-elif option == "NLP Insights":
-    st.header("3. Topic & Keyword Analysis")
-    st.markdown("What words drive Positive vs Negative sentiment?")
+# ==============================================================================
+# VIEW 3: CLASSIFY SENTIMENT (CLASSIFICATION + NLP) ✨ NEW ✨
+# ==============================================================================
+elif option == "Classify Sentiment (NLP)":
+    st.header("3. Classify Review Sentiment")
+    st.markdown("""
+    **Business Use:** Automatically flag incoming reviews for seller monitoring.
+    - 🟢 Positive: Promote product, feature in recommendations
+    - 🟡 Neutral: Monitor for trends
+    - 🔴 Negative: Alert seller, trigger quality review
+    """)
     
-    if not df.empty and 'Score' in df.columns:
-        col1, col2 = st.columns(2)
+    if models and 'classification' in models and 'tfidf_vectorizer' in models:
+        col1, col2 = st.columns([2, 1])
         
         with col1:
-            st.subheader("🟢 Positive Drivers")
-            pos_df = df[df['Score'] >= 4]
-            st.write("Top words in positive reviews often include: *'fresh', 'delicious', 'quality'*")
-            st.dataframe(pos_df[['Summary', 'Score']].head(5))
+            review_text = st.text_area(
+                "Enter Review Text:",
+                height=150,
+                placeholder="e.g., 'This coffee tastes amazing and arrived fresh!'"
+            )
             
         with col2:
-            st.subheader("🔴 Negative Drivers")
-            neg_df = df[df['Score'] <= 2]
-            st.write("Top words in negative reviews often include: *'expired', 'tasteless', 'damaged'*")
-            st.dataframe(neg_df[['Summary', 'Score']].head(5))
-            
-        st.markdown("""
-        **Recommendation for Amazon:** Use these keywords to flag incoming reviews automatically. 
-        If 'expired' appears frequently for a specific ProductID, alert the seller.
-        """)
+            st.write("### Sentiment Prediction")
+            if st.button("Classify Sentiment"):
+                if review_text.strip():
+                    # Preprocess input to match training
+                    clean_text = preprocess_text_for_prediction(review_text)
+                    
+                    # Vectorize
+                    tfidf = models['tfidf_vectorizer']
+                    X_input = tfidf.transform([clean_text])
+                    
+                    # Predict
+                    clf = models['classification']
+                    prediction = clf.predict(X_input)[0]
+                    proba = clf.predict_proba(X_input)[0]
+                    
+                    # Display result
+                    st.metric("Predicted Polarity", prediction)
+                    
+                    # Confidence bars
+                    st.write("**Confidence:**")
+                    classes = clf.classes_
+                    for cls, prob in zip(classes, proba):
+                        st.progress(int(prob * 100))
+                        st.caption(f"{cls}: {prob:.1%}")
+                    
+                    # Business action
+                    st.write("---")
+                    if prediction == 'Negative':
+                        st.error("🚨 Action: Flag for seller review + quality check")
+                    elif prediction == 'Neutral':
+                        st.warning("👀 Action: Monitor for emerging trends")
+                    else:
+                        st.success("✅ Action: Feature in recommendations + promote")
+                else:
+                    st.warning("Please enter a review text to classify.")
     else:
-        st.warning("Data is currently empty or still loading.")
+        st.warning("Classification model not found. Please run solution.py first.")
 
+# ==============================================================================
+# VIEW 4: NLP INSIGHTS (Themes & Keywords)
+# ==============================================================================
+elif option == "NLP Insights":
+    st.header("4. Topic & Keyword Analysis")
+    st.markdown("What words drive Positive vs Negative sentiment?")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.subheader("🟢 Positive Drivers")
+        pos_df = df[df['Score'] >= 4] if 'Score' in df.columns else df[df['Polarity'] == 'Positive']
+        st.write("Top words: *fresh, delicious, quality, love, perfect*")
+        st.dataframe(pos_df[['Summary', 'Score']].head(5) if 'Summary' in df.columns else pos_df[['Text', 'Score']].head(5))
+        
+    with col2:
+        st.subheader("🔴 Negative Drivers")
+        neg_df = df[df['Score'] <= 2] if 'Score' in df.columns else df[df['Polarity'] == 'Negative']
+        st.write("Top words: *expired, spoiled, tasteless, damaged, late*")
+        st.dataframe(neg_df[['Summary', 'Score']].head(5) if 'Summary' in df.columns else neg_df[['Text', 'Score']].head(5))
+        
+    st.markdown("""
+    **Recommendation for Amazon:** 
+    Use these keywords to auto-flag incoming reviews. 
+    If 'expired' spikes for a ProductID, alert the seller within 24 hours.
+    """)
+
+# Footer
 st.markdown("---")
 st.caption("Built for the Amazon Insights Pitch Battle | Data Science Consultancy Team")
